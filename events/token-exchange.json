@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "routeKey": "POST /oauth2/token",
+  "rawPath": "/oauth2/token",
+  "headers": {
+    "content-type": "application/x-www-form-urlencoded"
+  },
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/oauth2/token"
+    }
+  },
+  "isBase64Encoded": false,
+  "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&subject_token=PASTE_ENTRA_ACCESS_TOKEN_HERE&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token"
+}
+

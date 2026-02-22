@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Entra access token exchange Lambda (validate incoming JWT, return original token)
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 256
+
+Parameters:
+  EntraTenantId:
+    Type: String
+    Description: Azure Entra tenant ID (GUID)
+  EntraAudience:
+    Type: String
+    Description: Expected audience (aud) in incoming Entra access token
+  EntraIssuer:
+    Type: String
+    Description: Expected issuer (iss)
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - authorization
+          - content-type
+        AllowMethods:
+          - OPTIONS
+          - POST
+
+  TokenExchangeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs20.x
+      CodeUri: .
+      Handler: src/handler.handler
+      Environment:
+        Variables:
+          ENTRA_TENANT_ID: !Ref EntraTenantId
+          ENTRA_AUDIENCE: !Ref EntraAudience
+          CORS_ORIGIN: "*"
+
+          # Optional:
+          ENTRA_ISSUER: !Ref EntraIssuer
+          # REQUIRED_SCOPE: "read write"
+      Events:
+        Exchange:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /oauth2/token
+            Method: POST
+    Metadata:
+      BuildMethod: nodejs20.x
+
+Outputs:
+  TokenEndpoint:
+    Description: Token exchange endpoint
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/oauth2/token"
+
