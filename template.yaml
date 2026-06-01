@@ -4,7 +4,7 @@ Description: Entra access token exchange Lambda (validate incoming JWT, return o
 
 Globals:
   Function:
-    Runtime: nodejs20.x
+    Runtime: nodejs24.x
     Timeout: 10
     MemorySize: 256
 
@@ -36,7 +36,7 @@ Resources:
   TokenExchangeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: nodejs20.x
+      Runtime: nodejs24.x
       CodeUri: .
       Handler: src/handler.handler
       Environment:
@@ -56,7 +56,7 @@ Resources:
             Path: /oauth2/token
             Method: POST
     Metadata:
-      BuildMethod: nodejs20.x
+      BuildMethod: nodejs24.x
 
 Outputs:
   TokenEndpoint:

@@ -1,7 +1,10 @@
+.npmrc
 node_modules/
 .aws-sam/
 .sam-build/
 samconfig.toml
 env.local.json
+local.settings.json
+env.integration.json
 *.log
 
