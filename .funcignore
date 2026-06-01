@@ -1,0 +1,14 @@
+.git*
+.vscode
+.aws-sam
+.sam-build
+template.yaml
+samconfig.toml
+events
+docs
+env.local.json
+env.integration.json
+test
+scripts
+*.md
+!README.md
