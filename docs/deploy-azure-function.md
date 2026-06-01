@@ -45,13 +45,6 @@ In **Azure** (deployed), set the same keys as **Application settings** on the Fu
 
 ## Local development
 
-Install Core Tools if `func` is not on your PATH (macOS):
-
-```bash
-brew tap azure/functions
-brew install azure-functions-core-tools@4
-```
-
 ```bash
 npm install
 cp env.local.json.example env.local.json
@@ -80,8 +73,6 @@ curl --location --request POST \
 
 Replace placeholders with your values.
 
-> **Use Flex Consumption (recommended).** Legacy **Linux Consumption** (`--consumption-plan-location`) is unreliable with `func publish`: the upload succeeds but **Syncing triggers** fails and the host stays at 503. Even Microsoft's default v4 template hits this on many subscriptions. Flex Consumption is the supported serverless Linux plan going forward ([docs](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan)).
-
 ```bash
 RESOURCE_GROUP=superblocks-token-exchange-rg
 LOCATION=eastus
@@ -92,7 +83,7 @@ FUNCTION_APP=superblocks-token-exchange
 # misleading "SubscriptionNotFound" even though az group create works.
 az provider register --namespace Microsoft.Storage
 az provider register --namespace Microsoft.Web
-az provider register --namespace Microsoft.App   # Flex Consumption
+az provider register --namespace Microsoft.App
 
 az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
 
@@ -102,7 +93,6 @@ az storage account create \
   --location "$LOCATION" \
   --sku Standard_LRS
 
-# Flex Consumption (recommended)
 az functionapp create \
   --resource-group "$RESOURCE_GROUP" \
   --name "$FUNCTION_APP" \
@@ -130,66 +120,39 @@ az functionapp config appsettings set \
   --settings "ENTRA_ISSUER=https://login.microsoftonline.com/<tenant>/v2.0"
 ```
 
-<details>
-<summary>Legacy Linux Consumption (not recommended)</summary>
-
-Only use this if you cannot use Flex Consumption. Expect `func publish` to fail at **Syncing triggers**; see [Troubleshooting](#troubleshooting) for workarounds that may not recover a broken host.
-
-```bash
-az functionapp create \
-  --resource-group "$RESOURCE_GROUP" \
-  --consumption-plan-location "$LOCATION" \
-  --runtime node \
-  --runtime-version 24 \
-  --functions-version 4 \
-  --name "$FUNCTION_APP" \
-  --storage-account "$STORAGE_ACCOUNT" \
-  --os-type Linux
-```
-
-</details>
-
 ## Deploy code
 
-From the repo root. Use **production dependencies only** so the package stays small (~few MB, not 30+ MB with `snowflake-sdk`):
+From the repo root:
 
 ```bash
-npm ci --omit=dev
-func azure functionapp publish "$FUNCTION_APP"
-npm install   # restore devDependencies for local test:snowflake
+FUNCTION_APP=superblocks-token-exchange npm run func:publish:azure
 ```
 
-On **Flex Consumption**, publish should finish with `The deployment was successful!` and list your HTTP triggers. Verify:
+`npm run func:publish:azure` runs `scripts/azure-publish.mjs`, which:
+
+1. Runs `npm ci --omit=dev` (keeps the package ~few MB, not 30+ MB with `snowflake-sdk`)
+2. Runs `func azure functionapp publish`
+3. Runs `npm install` to restore devDependencies for local `test:snowflake`
+4. Curls `/api/health` and exits non-zero if the check fails
+
+Publish should finish with `The deployment was successful!` and list your HTTP triggers:
+
+```
+Functions in superblocks-token-exchange:
+    health - [httpTrigger]
+        Invoke url: https://superblocks-token-exchange.azurewebsites.net/api/health
+    tokenExchange - [httpTrigger]
+        Invoke url: https://superblocks-token-exchange.azurewebsites.net/api/oauth2/token
+```
+
+Verify:
 
 ```bash
 curl "https://$FUNCTION_APP.azurewebsites.net/api/health"
 # => ok
 ```
 
-### Legacy Linux Consumption publish
-
-If you are stuck on Linux Consumption, use the helper script instead of raw `func publish` alone. Core Tools sets `WEBSITE_MOUNT_ENABLED=1`, which conflicts with `WEBSITE_RUN_FROM_PACKAGE` and leaves the host at 503:
-
-```bash
-FUNCTION_APP="$FUNCTION_APP" RESOURCE_GROUP="$RESOURCE_GROUP" npm run func:publish:azure
-```
-
-If sync triggers still fails after that, **create a new Flex Consumption app** (above) and publish there — that is the reliable fix.
-
-If you already ran `npm install` with devDependencies, the publish still works but uploads a larger package. `--omit=dev` is recommended.
-
-### Upgrade an existing Function App to Node 24
-
-If the app was created with an older Node runtime:
-
-```bash
-az functionapp config set \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "$FUNCTION_APP" \
-  --linux-fx-version "NODE|24-lts"
-```
-
-Then republish with `func azure functionapp publish`.
+If you already ran `npm install` with devDependencies, publish still works but uploads a larger package. `--omit=dev` is recommended.
 
 ## Token URL in Superblocks
 
@@ -207,13 +170,14 @@ This handler sets CORS response headers. If you need additional Azure-level CORS
 
 ## Troubleshooting
 
-**`command not found: az`**: Install the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli). On macOS: `brew install azure-cli`, then `az login`. The `az` commands are only needed for the one-time resource creation step; `func azure functionapp publish` does not require `az` if the Function App already exists.
+**`command not found: az`**: Install the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli). On macOS: `brew install azure-cli`, then `az login`. The `az` commands are only needed for the one-time resource creation step; `npm run func:publish:azure` does not require `az` if the Function App already exists.
 
 **`SubscriptionNotFound` on `az storage account create` (but `az group create` works)**: Azure returns this misleading error when the **Microsoft.Storage** resource provider is not registered on your subscription. Fix:
 
 ```bash
 az provider register --namespace Microsoft.Storage
-az provider register --namespace Microsoft.Web   # needed for Function App
+az provider register --namespace Microsoft.Web
+az provider register --namespace Microsoft.App
 
 # Wait until Registered (can take 1–2 minutes)
 az provider show --namespace Microsoft.Storage --query registrationState -o tsv
@@ -228,31 +192,15 @@ az account list -o table
 az account set --subscription "<subscription-id-or-name>"
 ```
 
-**`Cannot find module` on publish**: Run `npm install` at the repo root before `func azure functionapp publish`.
+**`Cannot find module` on publish**: Run `FUNCTION_APP=<name> npm run func:publish:azure` from the repo root (it runs `npm ci --omit=dev` before publishing).
 
 **401 / signature errors**: Confirm Entra tokens use your API audience, not Microsoft Graph — see the main [README](../README.md#prerequisites-configure-your-entra-app).
 
 **404 on `/oauth2/token`**: Use `/api/oauth2/token` (include the `api` prefix) unless you change the Functions route prefix.
 
-**`Error calling sync triggers (BadRequest)`** after upload succeeds: This is common on **legacy Linux Consumption**. The package upload often succeeds; sync fails because the host runtime is unhealthy (503).
+**`Error calling sync triggers (BadRequest)` or 503 after publish**: Recreate the function app using the commands in [Create Azure resources](#create-azure-resources-first-time), then run `npm run func:publish:azure` again. Also confirm:
 
-1. **Best fix:** Create a **Flex Consumption** app (see [Create Azure resources](#create-azure-resources-first-time)) and publish there. Verified working with this repo.
-2. **If you must stay on Linux Consumption:** After publish, remove the setting Core Tools adds:
-   ```bash
-   az functionapp config appsettings delete \
-     --resource-group "$RESOURCE_GROUP" \
-     --name "$FUNCTION_APP" \
-     --setting-names WEBSITE_MOUNT_ENABLED
-   az functionapp restart --resource-group "$RESOURCE_GROUP" --name "$FUNCTION_APP"
-   ```
-   Or run `npm run func:publish:azure`, which does this automatically.
-3. Ensure v4 worker indexing is enabled:
-   ```bash
-   az functionapp config appsettings set \
-     --resource-group "$RESOURCE_GROUP" \
-     --name "$FUNCTION_APP" \
-     --settings AzureWebJobsFeatureFlags=EnableWorkerIndexing
-   ```
-4. Confirm `package.json` uses a **single entry point** (`"main": "src/index.js"`), not a glob pattern. Glob `main` values work locally but can fail in zip deploy packages.
+- `AzureWebJobsFeatureFlags=EnableWorkerIndexing` is set
+- `package.json` has `"main": "src/index.js"` (single entry point, not a glob pattern)
 
-If the host is still 503 after these steps, the Linux Consumption app is likely unrecoverable — use Flex Consumption instead. See [Troubleshoot Node.js in Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/functions-node-troubleshoot?pivots=nodejs-model-v4).
+See [Troubleshoot Node.js in Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/functions-node-troubleshoot?pivots=nodejs-model-v4).

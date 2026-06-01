@@ -10,7 +10,6 @@
     "sam:invoke": "sam local invoke TokenExchangeFunction --env-vars env.local.json -e events/token-exchange.json",
     "local:sync-env": "node scripts/sync-local-env.mjs",
     "func:start": "node scripts/func-start.mjs",
-    "func:publish": "func azure functionapp publish",
     "func:publish:azure": "node scripts/azure-publish.mjs",
     "test:snowflake": "node test/snowflake.mjs"
   },

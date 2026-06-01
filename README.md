@@ -325,6 +325,7 @@ Same variables for Lambda and Azure Function. For **local** runs, use a single `
 ├── env.local.json.example          Local env for Lambda + Azure (gitignored copy: env.local.json)
 ├── env.integration.json.example    Snowflake integration test config
 ├── scripts/sync-local-env.mjs      Writes local.settings.json for `func start`
+├── scripts/azure-publish.mjs       Azure deploy (`npm run func:publish:azure`)
 ├── test/
 │   └── snowflake.mjs               Token exchange → Snowflake integration test
 ├── events/token-exchange.json      Sample event for sam local invoke
@@ -364,7 +365,7 @@ See [docs/deploy-lambda.md](docs/deploy-lambda.md) for curl examples and Docker 
 
 ### Azure Function
 
-**Prerequisites:** [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local) v4 (`func` on your PATH).
+**Prerequisites:** [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local) v4 (`func` on your PATH), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) for one-time resource creation.
 
 macOS:
 
@@ -389,7 +390,7 @@ See [docs/deploy-azure-function.md](docs/deploy-azure-function.md) for curl exam
 
 **AWS Lambda** — [docs/deploy-lambda.md](docs/deploy-lambda.md): `sam build && sam deploy --guided`
 
-**Azure Function** — [docs/deploy-azure-function.md](docs/deploy-azure-function.md): create resources, then `func azure functionapp publish`
+**Azure Function** — [docs/deploy-azure-function.md](docs/deploy-azure-function.md): create resources, then `FUNCTION_APP=<name> npm run func:publish:azure`
 
 ---
 
