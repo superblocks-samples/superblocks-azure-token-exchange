@@ -1,17 +1,18 @@
 {
-  "version": "2.0",
-  "routeKey": "POST /oauth2/token",
-  "rawPath": "/oauth2/token",
+  "resource": "/oauth2/token",
+  "path": "/oauth2/token",
+  "httpMethod": "POST",
   "headers": {
     "content-type": "application/x-www-form-urlencoded"
   },
   "requestContext": {
-    "http": {
-      "method": "POST",
-      "path": "/oauth2/token"
+    "resourcePath": "/oauth2/token",
+    "httpMethod": "POST",
+    "stage": "Prod",
+    "identity": {
+      "sourceIp": "203.0.113.10"
     }
   },
   "isBase64Encoded": false,
   "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&subject_token=PASTE_ENTRA_ACCESS_TOKEN_HERE&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token"
 }
-

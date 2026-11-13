@@ -8,7 +8,7 @@ Deploy the same logic as either:
 
 | Runtime | Guide |
 |---|---|
-| **AWS Lambda** (API Gateway HTTP API) | [docs/deploy-lambda.md](docs/deploy-lambda.md) |
+| **AWS Lambda** (API Gateway REST API) | [docs/deploy-lambda.md](docs/deploy-lambda.md) |
 | **Azure Function** (HTTP trigger) | [docs/deploy-azure-function.md](docs/deploy-azure-function.md) |
 
 ## How it works
@@ -237,7 +237,7 @@ Users must sign in with Entra SSO scopes your API expects (e.g. `access_as_user`
 
 ### Token URL examples
 
-- **Lambda**: `https://<api-id>.execute-api.<region>.amazonaws.com/oauth2/token`
+- **Lambda**: `https://<api-id>.execute-api.<region>.amazonaws.com/Prod/oauth2/token`
 - **Azure Function**: `https://<app-name>.azurewebsites.net/api/oauth2/token`
 
 ### Token exchange request and response
@@ -320,7 +320,7 @@ Same variables for Lambda and Azure Function. For **local** runs, use a single `
 │   ├── handler.js                  AWS Lambda entry point
 │   ├── index.js                    Azure Functions app entry
 │   └── functions/tokenExchange.js  Azure HTTP trigger
-├── template.yaml                   AWS SAM (Lambda + HTTP API)
+├── template.yaml                   AWS SAM (Lambda + REST API)
 ├── host.json                       Azure Functions host config
 ├── env.local.json.example          Local env for Lambda + Azure (gitignored copy: env.local.json)
 ├── env.integration.json.example    Snowflake integration test config
