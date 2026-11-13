@@ -57,7 +57,15 @@ To update the list later:
 sam deploy --parameter-overrides AllowedSourceCidrs=203.0.113.10/32,203.0.113.11/32,203.0.113.12/32
 ```
 
-`sam deploy --parameter-overrides` replaces all overridden parameters, so include the Entra parameters too if they are not saved in `samconfig.toml`. Changing the list creates a new API deployment, so the policy takes effect on deploy.
+`sam deploy --parameter-overrides` replaces all overridden parameters, so include the Entra parameters too if they are not saved in `samconfig.toml`.
+
+Changing `AllowedSourceCidrs` alone does not create a new API Gateway deployment, so the `Prod` stage keeps serving the previous policy. After every change to the list, redeploy the stage:
+
+```bash
+aws apigateway create-deployment --rest-api-id <api-id> --stage-name Prod
+```
+
+`<api-id>` is the subdomain of `TokenEndpoint` (the `abc123` in `https://abc123.execute-api...`).
 
 Verify from a machine whose IP is **not** in the list:
 
